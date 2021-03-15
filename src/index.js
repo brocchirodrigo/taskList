@@ -13,10 +13,10 @@ const users = [];
 function checksExistsUserAccount(request, response, next) {
   const { username } = request.headers;
 
-  const user = users.find((user) => user.username === username)
+  const user = users.find(user => user.username === username);
 
   if(!user) {
-    return response.status(404).json({ error: 'Could not find user' })
+    return response.status(404).json({ error: 'Could not find user' });
   }
 
   request.user = user;
@@ -27,102 +27,93 @@ function checksExistsUserAccount(request, response, next) {
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
 
-  const existUser = users.some(user => user.username === username)
+  const userExists = users.find(user => user.username === username)
 
-  if(existUser) {
-    return response.status(400).json({ error: 'User already exists' })
+  if(userExists) {
+    return response.status(400).json({ error: 'Username already exists' });
   }
 
-  const newUser = {
+  const user = {
     id: uuidv4(),
-    username,
     name,
+    username,
     todos: []
-  }
+  };
 
-  users.push(newUser);
+  users.push(user);
 
-  return response.status(201).json(newUser)
+  return response.status(201).json(user)
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
 
-  const { todos } = request.user;
-
-  const testeArray = []
-
-  testeArray.push(todos)
+  const { user } = request;
   
-  return response.status(200).json(testeArray);
+  return response.json(user.todos);
 });
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {
-  const { todos } = request.user;
-  const { title, deadline, done } = request.body;
+  const { user } = request;
+  const { title, deadline } = request.body;
 
-  const newTodo = {
+  const todo = {
     id: uuidv4(),
     title,
-    done: done || false,
+    done: false,
     deadline: new Date(deadline),
     created_at: new Date()
   }
 
-  todos.push(newTodo);
+  user.todos.push(todo);
 
-  // const testeArrayTodo = {
-  //   deadline: newTodo.deadline,
-  //   done: newTodo.done,
-  //   title: newTodo.title
-  // }
-
-  return response.status(201).json(todos);
+  return response.status(201).json(todo);
 
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
-  const { todos } = request.user;
-  const { id } = request.params;
+  const { user } = request;
   const { title, deadline } = request.body;
-  const task = todos.find(todo => todo.id === id);
+  const { id } = request.params;
+  
+  const todo = user.todos.find(todo => todo.id === id);
 
-  if(!task) {
-    return response.status(404).json({ error: 'Todo not find' })
+  if(!todo) {
+    return response.status(404).json({ error: 'Todo not find' });
   }
 
-  task.title = title;
-  task.deadline = new Date(deadline);
+  todo.title = title;
+  todo.deadline = new Date(deadline);
 
-  return response.status(200).json(task)
+  return response.json(todo);
 
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
-  const { todos } = request.user;
+  const { user } = request;
   const { id } = request.params;
-  const task = todos.find(todo => todo.id === id);
+  const todo = user.todos.find(todo => todo.id === id);
 
-  if(!task) {
-    return response.status(404).json({ error: 'Todo not find' })
+  if(!todo) {
+    return response.status(404).json({ error: 'Todo not find' });
   }
 
-  task.done = true;
+  todo.done = true;
 
-  return response.status(200).json(task)
+  return response.json(todo);
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
-  const { todos } = request.user;
+  const { user } = request;
   const { id } = request.params;
-  const taskIndex = todos.findIndex(todo => todo.id === id);
+  const todoIndex = user.todos.findIndex(todo => todo.id === id);
 
-  if(taskIndex < 0) {
-    return response.status(404).json({ error: 'Todo not find' })
+  if(todoIndex === -1) {
+    return response.status(404).json({ error: 'Todo not find' });
   }
 
-  todos.splice(taskIndex, 1)
+  user.todos.splice(todoIndex, 1);
 
-  return response.status(204).send()
+  return response.status(204).send();
 });
 
 module.exports = app;
